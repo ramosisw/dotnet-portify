@@ -1,0 +1,62 @@
+
+# ASP.NET Core
+# Build and test ASP.NET Core projects targeting .NET Core.
+# Add steps that run tests, create a NuGet package, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/dotnet-core
+
+trigger:
+- master
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+  projectPath: 'src/App/App.csproj'
+
+steps:
+- script: dotnet build --configuration $(buildConfiguration) $(projectPath)
+  displayName: 'dotnet build $(buildConfiguration)'
+# - script: |
+#     dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./TestResults/Coverage/ /p:Exclude=\"[xunit*]*,[App*]Auto*\" --logger trx
+#   displayName: 'dotnet tests'
+# - task: PublishTestResults@2
+#   inputs:
+#     testRunner: VSTest
+#     testResultsFiles: '**/*.trx'
+#   displayName: 'publish tests'
+# - task: PublishCodeCoverageResults@1
+#   inputs:
+#     codeCoverageTool: 'cobertura'
+#     summaryFileLocation: '**/*.xml'
+#   displayName: 'publish coverage'
+- script: |
+    dotnet publish --configuration Release --runtime linux-arm --output out.arm $(projectPath)
+    # dotnet publish --configuration Release --runtime linux-x64 --output out.amd64 $(projectPath)
+  displayName: 'dotnet publish $(buildConfiguration)'
+  condition: and(succeeded(), startsWith(variables['Build.SourceVersionMessage'], '[Deploy]'))
+- script: |
+    docker build -f src/App/arm.dockerfile -t dr.wayproyect.com/portify:arm .
+    # docker build -f src/App/amd64.dockerfile -t dr.wayproyect.com/portify:amd64 .
+  displayName: 'docker build arm & amd64'
+  condition: and(succeeded(), startsWith(variables['Build.SourceVersionMessage'], '[Deploy]'))
+- script: |
+    echo login with $(dockerid)
+    echo "$(dockerpswd)" | docker --config . login dr.wayproyect.com --username $(dockerid) --password-stdin
+    docker --config . push dr.wayproyect.com/portify:arm
+    #docker --config . push dr.wayproyect.com/portify:amd64
+    #docker --config . manifest create dr.wayproyect.com/portify dr.wayproyect.com/portify:amd64 dr.wayproyect.com/portify:arm
+    #docker --config . manifest annotate --arch arm dr.wayproyect.com/portify dr.wayproyect.com/portify:arm
+    #docker --config . manifest push dr.wayproyect.com/portify
+    docker --config . logout
+  displayName: 'docker push images'
+  condition: and(succeeded(), startsWith(variables['Build.SourceVersionMessage'], '[Deploy]'))
+- task: SSH@0
+  inputs:
+    sshEndpoint: wayproyect
+    runOptions: 'commands'
+    commands: '/var/www/wayproyect.com/portify/run.sh'
+    failOnStdErr: false
+  displayName: 'Run shell commands on remote machine'
+  condition: and(succeeded(), startsWith(variables['Build.SourceVersionMessage'], '[Deploy]'))
+
