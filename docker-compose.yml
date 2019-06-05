@@ -1,0 +1,9 @@
+version: '3.2'
+
+services:
+  webapp:
+    image: dr.wayproyect.com/portify:arm
+    container_name: portify
+    restart: on-failure
+    ports:
+      - "5008:80"
