@@ -53,7 +53,7 @@ namespace App
             app.UseStaticFiles();
             app.UseCookiePolicy();
 
-            app.UseMvc();
+            app.UseMvcWithDefaultRoute();
         }
     }
 }
