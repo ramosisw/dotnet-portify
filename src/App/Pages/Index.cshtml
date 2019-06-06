@@ -7,7 +7,6 @@
 <div class="text-center">
     <h1 class="display-4">@Model.MeModel.DisplayName Welcome to Portify</h1>
     <a class="btn btn-success text-white" 
-        asp-area="api" 
         asp-controller="Spotify" 
         asp-action="GetExportAsync" 
         asp-route-AccessToken="@Model.Token.AccessToken"
