@@ -14,8 +14,6 @@ namespace App.Pages
     {
         private readonly ISpotifyService _spotifyService;
 
-
-
         public IndexModel(ISpotifyService spotifyService)
         {
             _spotifyService = spotifyService;

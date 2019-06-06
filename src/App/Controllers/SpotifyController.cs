@@ -46,8 +46,9 @@ namespace App.Controllers
         }
 
         [Route("export")]
-        public async Task<SpotifyData> GetExportAsync([FromQuery] SpotifyToken token)
+        public async Task<ActionResult<SpotifyData>> GetExportAsync([FromQuery] SpotifyToken token)
         {
+            if (string.IsNullOrEmpty(token?.AccessToken)) return RedirectToAction(nameof(GetAuthorization));
             var data = new SpotifyData();
             var user = await _spotifyService.GetMeAsync(token);
             data.UserId = user.Id;
