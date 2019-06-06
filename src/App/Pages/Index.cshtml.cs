@@ -21,11 +21,13 @@ namespace App.Pages
             _spotifyService = spotifyService;
         }
 
+        public SpotifyToken Token { get; private set; }
         public MeMessage MeModel { get; private set; }
 
-        public async Task OnGetAsync(string token, string refresh_token)
+        public async Task OnGetAsync([FromQuery] SpotifyToken token)
         {
-            MeModel = await _spotifyService.GetMeAsync(new SpotifyToken { AccessToken = token, RefreshToken = refresh_token });
+            Token = token;//new SpotifyToken { AccessToken = token, RefreshToken = refresh_token };
+            MeModel = await _spotifyService.GetMeAsync(Token);
         }
     }
 }

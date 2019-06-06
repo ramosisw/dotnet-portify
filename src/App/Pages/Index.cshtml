@@ -5,5 +5,12 @@
 }
 
 <div class="text-center">
-    <h1 class="display-4">Welcome to Portify</h1>
+    <h1 class="display-4">@Model.MeModel.DisplayName Welcome to Portify</h1>
+    <a class="btn btn-success text-white" 
+        asp-area="api" 
+        asp-controller="Spotify" 
+        asp-action="GetExportAsync" 
+        asp-route-AccessToken="@Model.Token.AccessToken"
+        asp-route-RefreshToken="@Model.Token.RefreshToken">Export</a>
+    <a class="btn btn-info text-white">Import</a>
 </div>

@@ -2,9 +2,8 @@ using Newtonsoft.Json;
 
 namespace Core.Models.Spotify.Me
 {
-    public class MeMessage
+    public class MeMessage : SpotifyUri
     {
-
         public string Country { get; set; }
 
         [JsonProperty("display_name")]
@@ -13,6 +12,5 @@ namespace Core.Models.Spotify.Me
         public string Id { get; set; }
         public string Product { get; set; }
         public string Type { get; set; }
-        public string Uri { get; set; }
     }
 }
