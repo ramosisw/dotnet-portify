@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -7,8 +8,10 @@ using System.Threading.Tasks;
 using App.Models.Spotify;
 using Core.Models.Spotify;
 using Core.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 
 namespace App.Controllers
 {
@@ -27,13 +30,13 @@ namespace App.Controllers
             return "API OK";
         }
 
-        [Route("authorization")]
+        [HttpGet("authorization")]
         public IActionResult GetAuthorization()
         {
             return Redirect(_spotifyService.GetAuthorizationUrl(Guid.NewGuid().ToString()));
         }
 
-        [Route("callback")]
+        [HttpGet("callback")]
         public async Task<IActionResult> GetCallbackAsync([FromQuery] SpotifyCallback callback)
         {
             if (callback.Error == null)
@@ -45,13 +48,14 @@ namespace App.Controllers
             return RedirectToPage("/Index");
         }
 
-        [Route("export")]
+        [HttpGet("export")]
         public async Task<ActionResult<SpotifyData>> GetExportAsync([FromQuery] SpotifyToken token)
         {
             if (string.IsNullOrEmpty(token?.AccessToken)) return RedirectToAction(nameof(GetAuthorization));
             var data = new SpotifyData();
             var user = await _spotifyService.GetMeAsync(token);
             data.UserId = user.Id;
+            data.DisplayName = user.DisplayName;
             var playlists = await _spotifyService.GetPlaylistsAsync(token);
             foreach (var playlist in playlists.Items)
             {
@@ -65,6 +69,24 @@ namespace App.Controllers
                 data.Playlists.Add(playlistItem);
             }
             return data;
+        }
+
+        [HttpPost("import")]
+        public async Task<ActionResult<bool>> PostImportAsync([FromQuery] SpotifyToken token, IFormFile importFile)
+        {
+            if (string.IsNullOrEmpty(token?.AccessToken)) return RedirectToAction(nameof(GetAuthorization));
+            if (importFile == null || importFile?.Length == 0) return BadRequest();
+
+
+            StreamReader reader = new StreamReader(importFile.OpenReadStream());
+            string jsonData = await reader.ReadToEndAsync();
+            var data = JsonConvert.DeserializeObject<SpotifyData>(jsonData);
+            foreach (var playlist in data.Playlists)
+            {
+
+            }
+
+            return await Task.FromResult(true);
         }
     }
 }

@@ -5,11 +5,47 @@
 }
 
 <div class="text-center">
-    <h1 class="display-4">@Model.MeModel.DisplayName Welcome to Portify</h1>
+    <h1 class="display-4">Welcome to Portify</h1>
+    @if(Model.IsLogged){
+    <p>Logged as @Model.MeModel.DisplayName (@Model.MeModel.Id)</p>
     <a class="btn btn-success text-white" 
         asp-controller="Spotify" 
         asp-action="GetExportAsync" 
         asp-route-AccessToken="@Model.Token.AccessToken"
         asp-route-RefreshToken="@Model.Token.RefreshToken">Export</a>
-    <a class="btn btn-info text-white">Import</a>
+    <button class="btn btn-info text-white" data-toggle="modal" data-target="#uploadModal" >Import</button>
+    }else{
+        <a class="btn btn-info text-white" 
+        asp-controller="Spotify" 
+        asp-action="GetAuthorization" >Login</a>
+    }
+</div>
+
+
+<div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="uploadModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="uploadModalLabel">Import file</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="post" enctype="multipart/form-data"
+                asp-controller="Spotify" 
+                asp-action="PostImportAsync"
+                asp-route-AccessToken="@Model.Token.AccessToken"
+                asp-route-RefreshToken="@Model.Token.RefreshToken" >
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="importFile">Select file to import (ex. export.json)</label>
+                        <input type="file" class="form-control-file" name="importFile" id="importFile" accept=".json">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>

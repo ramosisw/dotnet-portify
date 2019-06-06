@@ -18,6 +18,7 @@ namespace App.Models.Spotify
             Collaborative = playlist.Collaborative;
             Id = playlist.Id;
             Name = playlist.Name;
+            Description = playlist.Description;
             Public = playlist.Public;
             Uri = playlist.Uri;
             Tracks = new List<SpotifyPlaylistTrack>();
