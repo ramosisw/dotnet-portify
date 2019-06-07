@@ -12,6 +12,7 @@ namespace App.Models.Spotify
             Name = track.Name;
             PreviewUrl = track.PreviewUrl;
             Uri = track.Uri;
+            Id = track.Id;
         }
     }
 }

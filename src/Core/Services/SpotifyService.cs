@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Core.Models.Spotify.Me;
 using Core.Models.Spotify.Playlists;
 using Core.Extensions;
+using Core.Models.Spotify.Tracks;
 
 namespace Core.Services
 {
@@ -25,6 +26,10 @@ namespace Core.Services
         Task<GetPlaylistsTracks> GetPlaylistsTracksAsync(SpotifyToken token, string playlistId, int offset = 0, int limit = 50);
         Task<PlaylistObject> PostPlaylistAsync(SpotifyToken token, string userId, PostPlaylist playlist);
         Task<bool> PostPlaylistTracksAsync(SpotifyToken token, string playlistId, PostPlaylistTracks tracks);
+
+        Task<bool> IsFollowPlaylistAsync(SpotifyToken token, string playlistId);
+        Task<bool> FollowPlaylistAsync(SpotifyToken token, string playlistId);
+        Task<bool> PutTracksAsync(SpotifyToken token, PutTracks tracks);
     }
     public class SpotifyService : ISpotifyService
     {
@@ -111,6 +116,26 @@ namespace Core.Services
             return response.IsSuccessStatusCode;
         }
 
+        public async Task<bool> PutTracksAsync(SpotifyToken token, PutTracks tracks)
+        {
+            _apiClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+            var response = await _apiClient.PutAsJsonAsync($"me/tracks", tracks);
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> IsFollowPlaylistAsync(SpotifyToken token, string playlistId)
+        {
+            _apiClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+            var response = await _apiClient.GetAsync($"playlists/{playlistId}/followers/contains");
+            return response.IsSuccessStatusCode;
+        }
+
+        public async Task<bool> FollowPlaylistAsync(SpotifyToken token, string playlistId)
+        {
+            _apiClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+            var response = await _apiClient.GetAsync($"playlists/{playlistId}/followers");
+            return response.IsSuccessStatusCode;
+        }
     }
 
     public static class SpotifyServiceExtensions

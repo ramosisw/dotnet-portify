@@ -1,4 +1,5 @@
 using Core.Models.Spotify.Playlists;
+using Core.Models.Spotify.Tracks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ using Newtonsoft.Json;
 using Core.Services;
 using System.IO;
 using System;
+using System.Collections.Generic;
 
 namespace App.Controllers
 {
@@ -38,10 +40,10 @@ namespace App.Controllers
             if (callback.Error == null)
             {
                 var token = await _spotifyService.GetAuthorizationTokenAsync(callback.Code);
-                return RedirectToPage("/Index", new { AccessToken = token.AccessToken, RefreshToken = token.RefreshToken });
+                return RedirectToPage("/Index", new { AccessToken = token.AccessToken });
             }
 
-            return RedirectToPage("/Index");
+            return RedirectToPage($"/Index", new { Message = callback.Error, Type = "danger" });
         }
 
         [HttpGet("export")]
@@ -53,6 +55,7 @@ namespace App.Controllers
             if (string.IsNullOrEmpty(token?.AccessToken)) return RedirectToAction(nameof(GetAuthorization));
             var data = new SpotifyData();
             var user = await _spotifyService.GetMeAsync(token);
+            if (string.IsNullOrEmpty(user.Id)) return RedirectToPage($"/Index", new { Message = "Invalid token, login!", Type = "warning" });
             data.UserId = user.Id;
             data.DisplayName = user.DisplayName;
             do
@@ -111,35 +114,136 @@ namespace App.Controllers
             if (string.IsNullOrEmpty(token?.AccessToken)) return RedirectToAction(nameof(GetAuthorization));
             if (importFile == null || importFile?.Length == 0) return BadRequest();
 
-
             StreamReader reader = new StreamReader(importFile.OpenReadStream());
             string jsonData = await reader.ReadToEndAsync();
             var data = JsonConvert.DeserializeObject<SpotifyData>(jsonData);
+
+            if (data.Version != SpotifyDataVersion.VERSION_1) return RedirectToPage($"/Index", new { AccessToken = token.AccessToken, Message = "Unsuported version", Type = "warning" });
+            var userPlaylists = await GetPlaylistsDictionaryAsync(token);
+
             foreach (var playlist in data.Playlists)
             {
-                var playlistObject = await _spotifyService.PostPlaylistAsync(token, userId, new PostPlaylist
+                var playlistId = "";
+                if (!userPlaylists.ContainsKey(playlist.Name))
                 {
-                    Collaborative = playlist.Collaborative,
-                    Name = playlist.Name,
-                    Description = playlist.Description,
-                    Public = playlist.Public
-                });
+                    var playlistObject = await _spotifyService.PostPlaylistAsync(token, userId, new PostPlaylist
+                    {
+                        Collaborative = playlist.Collaborative,
+                        Name = playlist.Name,
+                        Description = playlist.Description,
+                        Public = playlist.Public
+                    });
+                    userPlaylists.Add(playlistObject.Name, playlistObject.Id);
+                }
 
-                var totalTracks = playlist.Tracks.Count;
-                var i = 0;
+                playlistId = userPlaylists[playlist.Name];
+
+                var importTotalTracks = playlist.Tracks.Count;
+                var userPlaylistTracks = await GetPlaylistTracksListAsync(token, playlistId);
+                var importTotalTracksIterator = 0;
                 do
                 {
                     PostPlaylistTracks tracks = new PostPlaylistTracks();
-                    for (var j = 0; (i < totalTracks && j < 50); j++)
+                    for (var j = 0; (importTotalTracksIterator < importTotalTracks && j < 50); j++)
                     {
-                        var track = playlist.Tracks[(i++)];
+                        var track = playlist.Tracks[(importTotalTracksIterator++)];
+                        if (userPlaylistTracks.Contains(track.Uri))
+                        {
+                            j--;
+                            continue;
+                        }
                         tracks.Uris.Add(track.Uri);
                     }
-                    await _spotifyService.PostPlaylistTracksAsync(token, playlistObject.Id, tracks);
-                } while (i < totalTracks);
+                    await _spotifyService.PostPlaylistTracksAsync(token, playlistId, tracks);
+                } while (importTotalTracksIterator < importTotalTracks);
             }
 
-            return await Task.FromResult(true);
+            var userTracks = await GetTracksListAsync(token);
+
+            var totalTracks = data.Tracks.Count;
+            var i = 0;
+            while (i < totalTracks)
+            {
+                var groupTracks = new List<string>();
+                for (var j = 0; (i < totalTracks && j < 50); j++)
+                {
+                    var track = data.Tracks[(i++)];
+                    if (userTracks.Contains(track.Uri))
+                    {
+                        j--;
+                        continue;
+                    }
+                    groupTracks.Add(track.Id);
+                }
+                await _spotifyService.PutTracksAsync(token, new PutTracks
+                {
+                    Ids = string.Join(",", groupTracks.ToArray())
+                });
+            }
+
+            foreach (var playlistFollow in data.FollowPlaylists)
+            {
+                var urisplit = playlistFollow.Split(":");
+                if (urisplit.Length != 3) continue;
+                var playlistId = urisplit[2];
+                if (!await _spotifyService.IsFollowPlaylistAsync(token, playlistId))
+                {
+                    await _spotifyService.FollowPlaylistAsync(token, playlistId);
+                }
+            }
+
+            return RedirectToPage($"/Index", new { Message = "Imported!", Type = "success" });
+        }
+
+        private async Task<IDictionary<string, string>> GetPlaylistsDictionaryAsync(SpotifyToken token)
+        {
+            var hasMore = false;
+            var offset = 0;
+            var result = new Dictionary<string, string>();
+            do
+            {
+                var currentPlaylists = await _spotifyService.GetPlaylistsAsync(token, offset);
+                foreach (var currentPlaylist in currentPlaylists.Items)
+                    result.Add(currentPlaylist.Name, currentPlaylist.Id);
+                hasMore = !string.IsNullOrEmpty(currentPlaylists.Next);
+                offset = currentPlaylists.Offset + currentPlaylists.Limit;
+            } while (hasMore);
+            return result;
+        }
+
+        private async Task<List<string>> GetPlaylistTracksListAsync(SpotifyToken token, string playlistId)
+        {
+            var hasMore = false;
+            var offset = 0;
+            var result = new List<string>();
+            do
+            {
+                var playlistTracks = await _spotifyService.GetPlaylistsTracksAsync(token, playlistId, offset);
+                foreach (var playlistTrack in playlistTracks.Items)
+                {
+                    if (playlistTrack.IsLocal) continue; //ignore local
+                    result.Add(playlistTrack.Track.Uri);
+                }
+                hasMore = !string.IsNullOrEmpty(playlistTracks.Next);
+                offset = playlistTracks.Offset + playlistTracks.Limit;
+            } while (hasMore);
+            return result;
+        }
+
+        private async Task<List<string>> GetTracksListAsync(SpotifyToken token)
+        {
+            var hasMore = false;
+            var offset = 0;
+            var result = new List<string>();
+            do
+            {
+                var tracks = await _spotifyService.GetTracksAsync(token, offset);
+                foreach (var track in tracks.Items)
+                    result.Add(track.Track.Uri);
+                hasMore = !string.IsNullOrEmpty(tracks.Next);
+                offset = tracks.Offset + tracks.Limit;
+            } while (hasMore);
+            return result;
         }
     }
 }

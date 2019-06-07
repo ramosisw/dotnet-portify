@@ -1,0 +1,14 @@
+﻿@{
+    var message = ViewData["AlertMessage"] + "";
+    var type = ViewData["AlertType"] + "";
+    var showMessage = !string.IsNullOrEmpty(message);
+}
+@if (@showMessage)
+{
+    <div id="cookieConsent" class="alert alert-@type alert-dismissible fade show" role="alert">
+        @message
+        <button type="button" class="accept-policy close" data-dismiss="alert" aria-label="Close" >
+            <span aria-hidden="true">Accept</span>
+        </button>
+    </div>
+}

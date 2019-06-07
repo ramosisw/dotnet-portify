@@ -23,9 +23,11 @@ namespace App.Pages
         public GetMe MeModel { get; private set; }
         public bool IsLogged { get; set; }
 
-        public async Task OnGetAsync([FromQuery] SpotifyToken token)
+        public async Task OnGetAsync([FromQuery] SpotifyToken token, string message, string type = "success")
         {
             Token = token;
+            ViewData["AlertMessage"] = message;
+            ViewData["AlertType"] = type;
             IsLogged = !(token == null || string.IsNullOrEmpty(token?.AccessToken));
             MeModel = await _spotifyService.GetMeAsync(Token);
         }
