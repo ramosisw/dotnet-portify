@@ -1,11 +1,9 @@
 using Newtonsoft.Json;
 
-namespace Core.Models.Spotify.Me
+namespace Core.Models.Spotify.Users
 {
-    public class MeMessage : SpotifyUri
+    public class UserObject : SpotifyUri
     {
-        public string Country { get; set; }
-
         [JsonProperty("display_name")]
         public string DisplayName { get; set; }
         public string Email { get; set; }

@@ -17,7 +17,7 @@
                 "enabled": false
             },
             "env": {
-                "ASPNETCORE_ENVIRONMENT": "Production",
+                "ASPNETCORE_ENVIRONMENT": "Development",
                 "SpotifySettings__clientId": "Changed"
             },
             "envFile": "${workspaceFolder}/../portify.env",

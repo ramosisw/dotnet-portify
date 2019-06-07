@@ -3,7 +3,7 @@ using Core.Models.Spotify.Playlists;
 
 namespace App.Models.Spotify
 {
-    public class SpotifyPlaylist : GetPlaylistsItem
+    public class SpotifyPlaylist : PlaylistObject
     {
 
         public List<SpotifyPlaylistTrack> Tracks { get; set; }
@@ -13,7 +13,7 @@ namespace App.Models.Spotify
             Tracks = new List<SpotifyPlaylistTrack>();
         }
 
-        public SpotifyPlaylist(GetPlaylistsItem playlist)
+        public SpotifyPlaylist(PlaylistObject playlist)
         {
             Collaborative = playlist.Collaborative;
             Id = playlist.Id;

@@ -7,6 +7,6 @@ namespace Core.Models.Spotify.Playlists
     {
         [JsonProperty("is_local")]
         public bool IsLocal { get; set; }
-        public GetTrack Track { get; set; }
+        public TrackObject Track { get; set; }
     }
 }

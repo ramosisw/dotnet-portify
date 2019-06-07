@@ -11,7 +11,6 @@
                 "build",
                 "${workspaceFolder}/src/App/App.csproj"
             ],
-            "problemMatcher": "$msCompile",
             "group": {
                 "kind": "build",
                 "isDefault": true

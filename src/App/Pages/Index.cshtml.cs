@@ -20,7 +20,7 @@ namespace App.Pages
         }
 
         public SpotifyToken Token { get; private set; }
-        public MeMessage MeModel { get; private set; }
+        public GetMe MeModel { get; private set; }
         public bool IsLogged { get; set; }
 
         public async Task OnGetAsync([FromQuery] SpotifyToken token)

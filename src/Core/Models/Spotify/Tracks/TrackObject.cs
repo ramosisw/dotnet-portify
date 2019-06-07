@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace Core.Models.Spotify.Tracks
 {
-    public class GetTrack : SpotifyUri
+    public class TrackObject : SpotifyUri
     {
         public string Name { get; set; }
 

@@ -4,6 +4,6 @@ namespace Core.Models.Spotify.Playlists
 {
     public class GetPlaylistsTracks : SpotifyPagination
     {
-        public List<GetPlaylistsTracksItem> Items {get;set;}
+        public List<GetPlaylistsTracksItem> Items { get; set; }
     }
 }

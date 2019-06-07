@@ -11,6 +11,7 @@ using Newtonsoft.Json;
 using System.Threading.Tasks;
 using Core.Models.Spotify.Me;
 using Core.Models.Spotify.Playlists;
+using Core.Extensions;
 
 namespace Core.Services
 {
@@ -18,9 +19,12 @@ namespace Core.Services
     {
         string GetAuthorizationUrl(string state);
         Task<SpotifyToken> GetAuthorizationTokenAsync(string code);
-        Task<MeMessage> GetMeAsync(SpotifyToken token);
-        Task<GetPlaylists> GetPlaylistsAsync(SpotifyToken token);
-        Task<GetPlaylistsTracks> GetPlaylistsTracksAsync(SpotifyToken token, string playlistId);
+        Task<GetMe> GetMeAsync(SpotifyToken token);
+        Task<GetTracks> GetTracksAsync(SpotifyToken token, int offset = 0, int limit = 50);
+        Task<GetPlaylists> GetPlaylistsAsync(SpotifyToken token, int offset = 0, int limit = 50);
+        Task<GetPlaylistsTracks> GetPlaylistsTracksAsync(SpotifyToken token, string playlistId, int offset = 0, int limit = 50);
+        Task<PlaylistObject> PostPlaylistAsync(SpotifyToken token, string userId, PostPlaylist playlist);
+        Task<bool> PostPlaylistTracksAsync(SpotifyToken token, string playlistId, PostPlaylistTracks tracks);
     }
     public class SpotifyService : ISpotifyService
     {
@@ -40,7 +44,8 @@ namespace Core.Services
                 {"response_type", "code"},
                 {"scope", _spotifySettings.Scope},
                 {"redirect_uri", _spotifySettings.RedirectUri},
-                {"state", state}
+                {"state", state},
+                {"show_dialog", "true"}
             };
             return QueryHelpers.AddQueryString("https://accounts.spotify.com/authorize?", queryData);
         }
@@ -61,33 +66,51 @@ namespace Core.Services
             var credentials = Encoding.ASCII.GetBytes($"{_spotifySettings.ClientId}:{_spotifySettings.ClientSecret}");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(credentials));
             var response = await client.PostAsync("/api/token", form);
-            var jsonString = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<SpotifyToken>(jsonString);
+            return await response.JsonContentObject<SpotifyToken>();
         }
 
-        public async Task<MeMessage> GetMeAsync(SpotifyToken token)
+        public async Task<GetMe> GetMeAsync(SpotifyToken token)
         {
             _apiClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
             var response = await _apiClient.GetAsync("me");
-            var jsonString = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<MeMessage>(jsonString);
+            return await response.JsonContentObject<GetMe>();
         }
 
-        public async Task<GetPlaylists> GetPlaylistsAsync(SpotifyToken token)
+        public async Task<GetTracks> GetTracksAsync(SpotifyToken token, int offset = 0, int limit = 50)
         {
             _apiClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
-            var response = await _apiClient.GetAsync("me/playlists");
-            var jsonString = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<GetPlaylists>(jsonString);
+            var response = await _apiClient.GetAsync($"me/tracks?offset={offset}&limit={limit}");
+            return await response.JsonContentObject<GetTracks>();
         }
 
-        public async Task<GetPlaylistsTracks> GetPlaylistsTracksAsync(SpotifyToken token, string playlistId)
+        public async Task<GetPlaylists> GetPlaylistsAsync(SpotifyToken token, int offset = 0, int limit = 50)
         {
             _apiClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
-            var response = await _apiClient.GetAsync($"playlists/{playlistId}/tracks");
-            var jsonString = await response.Content.ReadAsStringAsync();
-            return JsonConvert.DeserializeObject<GetPlaylistsTracks>(jsonString);
+            var response = await _apiClient.GetAsync($"me/playlists?offset={offset}&limit={limit}");
+            return await response.JsonContentObject<GetPlaylists>();
         }
+
+        public async Task<GetPlaylistsTracks> GetPlaylistsTracksAsync(SpotifyToken token, string playlistId, int offset = 0, int limit = 50)
+        {
+            _apiClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+            var response = await _apiClient.GetAsync($"playlists/{playlistId}/tracks?offset={offset}&limit={limit}");
+            return await response.JsonContentObject<GetPlaylistsTracks>();
+        }
+
+        public async Task<PlaylistObject> PostPlaylistAsync(SpotifyToken token, string userId, PostPlaylist playlist)
+        {
+            _apiClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+            var response = await _apiClient.PostAsJsonAsync($"users/{userId}/playlists", playlist);
+            return await response.JsonContentObject<PlaylistObject>();
+        }
+
+        public async Task<bool> PostPlaylistTracksAsync(SpotifyToken token, string playlistId, PostPlaylistTracks tracks)
+        {
+            _apiClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
+            var response = await _apiClient.PostAsJsonAsync($"playlists/{playlistId}/tracks", tracks);
+            return response.IsSuccessStatusCode;
+        }
+
     }
 
     public static class SpotifyServiceExtensions

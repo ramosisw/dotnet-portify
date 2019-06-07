@@ -1,13 +1,17 @@
+using Core.Models.Spotify.Me;
 using Core.Models.Spotify.Playlists;
+using Core.Models.Spotify.Tracks;
 
 namespace App.Models.Spotify
 {
-    public class SpotifyPlaylistTrack : GetPlaylistsTracksItem
+    public class SpotifyPlaylistTrack : TrackObject
     {
-        public SpotifyPlaylistTrack(GetPlaylistsTracksItem track)
+        public SpotifyPlaylistTrack() { }
+        public SpotifyPlaylistTrack(TrackObject track)
         {
-            IsLocal = track.IsLocal;
-            Track = track.Track;
+            Name = track.Name;
+            PreviewUrl = track.PreviewUrl;
+            Uri = track.Uri;
         }
     }
 }

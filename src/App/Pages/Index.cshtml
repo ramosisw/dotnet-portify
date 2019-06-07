@@ -22,7 +22,7 @@
 </div>
 
 
-<div class="modal fade" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="uploadModalLabel" aria-hidden="true">
+<div class="modal fade static" id="uploadModal" tabindex="-1" role="dialog" aria-labelledby="uploadModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -39,6 +39,7 @@
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="importFile">Select file to import (ex. export.json)</label>
+                        <input type="hidden" name="userId" id="userId" value="@Model.MeModel.Id">
                         <input type="file" class="form-control-file" name="importFile" id="importFile" accept=".json">
                     </div>
                 </div>
