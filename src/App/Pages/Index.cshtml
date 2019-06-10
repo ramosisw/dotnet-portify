@@ -8,12 +8,8 @@
     <h1 class="display-4">Welcome to Portify</h1>
     @if(Model.IsLogged){
     <p>Logged as @Model.MeModel.DisplayName (@Model.MeModel.Id)</p>
-    <a class="btn btn-success text-white" 
-        asp-controller="Spotify" 
-        asp-action="GetExportAsync" 
-        asp-route-AccessToken="@Model.Token.AccessToken"
-        asp-route-RefreshToken="@Model.Token.RefreshToken">Export</a>
-    <button class="btn btn-info text-white" data-toggle="modal" data-target="#uploadModal" >Import</button>
+    <button class="btn btn-success text-white" id="exportBtn" >Export</button>
+    <button class="btn btn-info text-white" id="importBtn" >Import</button>
     }else{
         <a class="btn btn-info text-white" 
         asp-controller="Spotify" 
@@ -31,7 +27,7 @@
                 <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form method="post" enctype="multipart/form-data"
+            <form method="post" enctype="multipart/form-data" id="importForm"
                 asp-controller="Spotify" 
                 asp-action="PostImportAsync"
                 asp-route-AccessToken="@Model.Token.AccessToken"
@@ -40,7 +36,7 @@
                     <div class="form-group">
                         <label for="importFile">Select file to import (ex. export.json)</label>
                         <input type="hidden" name="userId" id="userId" value="@Model.MeModel.Id">
-                        <input type="file" class="form-control-file" name="importFile" id="importFile" accept=".json">
+                        <input type="file" class="form-control-file" name="importFile" id="importFile" accept=".json" required>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -50,3 +46,74 @@
         </div>
     </div>
 </div>
+<div class="modal fade static" id="waitModal" tabindex="-1" role="dialog" aria-labelledby="waitModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="waitModalLabel">Loading</h5>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p>Please wait a few seconds...</p>
+                <div class="progress">
+                    <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    $(document).ready(() => {
+        const importBtn = $("#importBtn");
+        const exportBtn = $("#exportBtn");
+        const importForm = $("#importForm");
+        //Modals
+        const waitModal = $("#waitModal");
+        const uploadModal = $("#uploadModal");
+
+        const showWait = () => {
+            $(waitModal).modal({ backdrop : 'static' });
+        };
+
+        const hideWait = () => {
+            $(waitModal).modal('hide');
+        };
+
+        const downloadJson = (fileName, jsonText) => {
+            const a = document.createElement('a');
+            a.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(jsonText));
+            a.setAttribute('download', fileName);
+            if (document.createEvent) {
+                const e = document.createEvent('MouseEvents');
+                e.initEvent('click', true, true);
+                a.dispatchEvent(e);
+            } else {
+                a.click();
+            }
+        };
+
+        $(importBtn).click(() => {
+            $(uploadModal).modal({ backdrop : 'static' });
+        });
+
+        $(exportBtn).click(() => {
+            showWait();
+            $.ajax({
+                type: "GET",
+                url: "/api/spotify/export?AccessToken=@Model.Token.AccessToken",
+                success: (data) => {
+                    downloadJson("@Model.MeModel.Id" + ".json", JSON.stringify(data, null, 4));
+                    hideWait();
+                }
+            });
+        });
+        
+        $(importForm).submit(() => {
+            $(uploadModal).modal('hide');
+            showWait();
+        });
+    });
+</script>
+}
