@@ -119,7 +119,7 @@ namespace Core.Services
         public async Task<bool> PutTracksAsync(SpotifyToken token, PutTracks tracks)
         {
             _apiClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
-            var response = await _apiClient.PutAsJsonAsync($"me/tracks", tracks);
+            var response = await _apiClient.PutAsync($"me/tracks?ids={tracks.Ids}", null);
             return response.IsSuccessStatusCode;
         }
 
@@ -133,7 +133,7 @@ namespace Core.Services
         public async Task<bool> FollowPlaylistAsync(SpotifyToken token, string playlistId)
         {
             _apiClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token.AccessToken);
-            var response = await _apiClient.GetAsync($"playlists/{playlistId}/followers");
+            var response = await _apiClient.PutAsync($"playlists/{playlistId}/followers", null);
             return response.IsSuccessStatusCode;
         }
     }

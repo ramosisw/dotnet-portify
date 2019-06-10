@@ -204,7 +204,10 @@ namespace App.Controllers
             {
                 var currentPlaylists = await _spotifyService.GetPlaylistsAsync(token, offset);
                 foreach (var currentPlaylist in currentPlaylists.Items)
+                {
+                    if (result.ContainsKey(currentPlaylist.Name)) continue;
                     result.Add(currentPlaylist.Name, currentPlaylist.Id);
+                }
                 hasMore = !string.IsNullOrEmpty(currentPlaylists.Next);
                 offset = currentPlaylists.Offset + currentPlaylists.Limit;
             } while (hasMore);
