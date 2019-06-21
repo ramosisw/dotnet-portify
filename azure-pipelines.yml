@@ -13,44 +13,49 @@ pool:
 variables:
   buildConfiguration: 'Release'
   projectPath: 'src/App/App.csproj'
+  imageOwner: 'ramosisw'
 
 steps:
 - script: dotnet build --configuration $(buildConfiguration) $(projectPath)
   displayName: 'dotnet build $(buildConfiguration)'
+
 # - script: |
 #     dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura /p:CoverletOutput=./TestResults/Coverage/ /p:Exclude=\"[xunit*]*,[App*]Auto*\" --logger trx
 #   displayName: 'dotnet tests'
+
 # - task: PublishTestResults@2
 #   inputs:
 #     testRunner: VSTest
 #     testResultsFiles: '**/*.trx'
 #   displayName: 'publish tests'
+
 # - task: PublishCodeCoverageResults@1
 #   inputs:
 #     codeCoverageTool: 'cobertura'
 #     summaryFileLocation: '**/*.xml'
 #   displayName: 'publish coverage'
+
 - script: |
-    dotnet publish --configuration Release --runtime linux-arm --output out.arm $(projectPath)
-    # dotnet publish --configuration Release --runtime linux-x64 --output out.amd64 $(projectPath)
+    dotnet publish --configuration $(buildConfiguration) --runtime linux-arm --output out.arm $(projectPath)
+    # dotnet publish --configuration $(buildConfiguration) --runtime linux-x64 --output out.amd64 $(projectPath)
   displayName: 'dotnet publish $(buildConfiguration)'
   condition: and(succeeded(), startsWith(variables['Build.SourceVersionMessage'], '[Deploy]'))
+
 - script: |
-    docker build -f src/App/arm.dockerfile -t dr.wayproyect.com/portify:arm .
-    # docker build -f src/App/amd64.dockerfile -t dr.wayproyect.com/portify:amd64 .
+    docker build -f src/App/arm.dockerfile -t $(imageOwner)/portify:arm .
+    # docker build -f src/App/amd64.dockerfile -t $(imageOwner)/portify:amd64 .
   displayName: 'docker build arm & amd64'
   condition: and(succeeded(), startsWith(variables['Build.SourceVersionMessage'], '[Deploy]'))
-- script: |
-    echo login with $(dockerid)
-    echo "$(dockerpswd)" | docker --config . login dr.wayproyect.com --username $(dockerid) --password-stdin
-    docker --config . push dr.wayproyect.com/portify:arm
-    #docker --config . push dr.wayproyect.com/portify:amd64
-    #docker --config . manifest create dr.wayproyect.com/portify dr.wayproyect.com/portify:amd64 dr.wayproyect.com/portify:arm
-    #docker --config . manifest annotate --arch arm dr.wayproyect.com/portify dr.wayproyect.com/portify:arm
-    #docker --config . manifest push dr.wayproyect.com/portify
-    docker --config . logout
-  displayName: 'docker push images'
+
+- task: Docker@1
+  displayName: Push docker image
+  inputs:
+    command: push
+    containerRegistryType: 'Container Registry'
+    dockerRegistryEndpoint: 'Docker Hub'
+    imageName: $(imageOwner)/portify
   condition: and(succeeded(), startsWith(variables['Build.SourceVersionMessage'], '[Deploy]'))
+
 - task: SSH@0
   inputs:
     sshEndpoint: wayproyect
