@@ -64,4 +64,3 @@ steps:
     failOnStdErr: false
   displayName: 'Run shell commands on remote machine'
   condition: and(succeeded(), startsWith(variables['Build.SourceVersionMessage'], '[Deploy]'))
-
